@@ -1,4 +1,10 @@
 Write-Output "Starting ProgramZelva ToolBox..."
+Write-Output "Hledám soubor zde: $applicationsFilePath"
+if (-not (Test-Path $applicationsFilePath)) {
+    Write-Error "Soubor applications.json nenalezen. Aktuální adresář: $(Get-Location)"
+    return
+}
+
 
 # Nacteni WPF
 Add-Type -AssemblyName PresentationFramework
