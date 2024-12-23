@@ -1,0 +1,19 @@
+{
+    "Browsers": [
+      { "Name": "Firefox", "WingetID": "Mozilla.Firefox" },
+      { "Name": "Google Chrome", "WingetID": "Google.Chrome" }
+    ],
+    "Communications": [
+      { "Name": "Discord", "WingetID": "Discord.Discord" }
+    ],
+    "Multimedia Tools": [
+      { "Name": "Audacity", "WingetID": "Audacity.Audacity" }
+    ],
+    "Utilities": [
+      { "Name": "7-Zip", "WingetID": "7zip.7zip" }
+    ],
+    "Productivity": [
+      { "Name": "Microsoft Office", "WingetID": "Microsoft.Office" }
+    ]
+  }
+  
