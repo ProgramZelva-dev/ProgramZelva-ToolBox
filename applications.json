@@ -1,19 +1,41 @@
 {
-    "Browsers": [
-      { "Name": "Firefox", "WingetID": "Mozilla.Firefox" },
-      { "Name": "Google Chrome", "WingetID": "Google.Chrome" }
-    ],
-    "Communications": [
-      { "Name": "Discord", "WingetID": "Discord.Discord" }
-    ],
-    "Multimedia Tools": [
-      { "Name": "Audacity", "WingetID": "Audacity.Audacity" }
-    ],
-    "Utilities": [
-      { "Name": "7-Zip", "WingetID": "7zip.7zip" }
-    ],
-    "Productivity": [
-      { "Name": "Microsoft Office", "WingetID": "Microsoft.Office" }
-    ]
-  }
-  
+  "Prohlížeče": [
+    {"Name": "Firefox", "WingetID": "Mozilla.Firefox"},
+    {"Name": "Google Chrome", "WingetID": "Google.Chrome"}
+  ],
+  "Komunikace": [
+    {"Name": "Discord", "WingetID": "Discord.Discord"}
+  ],
+  "Multimediální nástroje": [
+    {"Name": "Audacity", "WingetID": "Audacity.Audacity"},
+    {"Name": "VLC Media Player", "WingetID": "VideoLAN.VLC"}
+  ],
+  "Nástroje pro Windows": [
+    {"Name": "7-Zip", "WingetID": "7zip.7zip"},
+    {"Name": "WinRAR", "WingetID": "win.rar GmbH.WinRAR"}
+  ],
+  "Pracovní nástroje": [
+    {"Name": "Microsoft Office", "WingetID": "Microsoft.Office"},
+    {"Name": "Visual Studio Code", "WingetID": "Microsoft.VisualStudioCode"}
+  ],
+  "Herní nástroje": [
+    {"Name": "Steam", "WingetID": "Valve.Steam"},
+    {"Name": "Epic Games Launcher", "WingetID": "EpicGames.EpicGamesLauncher"}
+  ],
+  "Vývojové nástroje": [
+    {"Name": "Node.js", "WingetID": "NodeJS.NodeJS"},
+    {"Name": "Docker", "WingetID": "Docker.Docker"}
+  ],
+  "Systémové nástroje": [
+    {"Name": "TeamViewer", "WingetID": "TeamViewer.TeamViewer"},
+    {"Name": "VirtualBox", "WingetID": "Oracle.VirtualBox"}
+  ],
+  "Bezpečnostní nástroje": [
+    {"Name": "Avast Antivirus", "WingetID": "Avast.AvastFreeAntivirus"},
+    {"Name": "Bitdefender", "WingetID": "Bitdefender.Bitdefender"}
+  ],
+  "Zálohování a soubory": [
+    {"Name": "Google Drive", "WingetID": "Google.GoogleDrive"},
+    {"Name": "Dropbox", "WingetID": "Dropbox.Dropbox"}
+  ]
+}
