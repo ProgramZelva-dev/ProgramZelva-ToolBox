@@ -1,5 +1,5 @@
 Write-Output "Starting ProgramZelva ToolBox..."
-
+ 
 # Nastaveni bufferu a okna PowerShell
 $bufferWidth = 120
 $bufferHeight = 300  # Dostatecne velky buffer
