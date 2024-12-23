@@ -60,19 +60,29 @@ try {
     return
 }
 
-# Cesta k souboru aplikací (webová URL)
+# URL souboru aplikací
 $applicationsUrl = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
 
 # Načtení aplikací z JSON souboru z webu
 try {
     Write-Output "Načítám aplikace z URL: $applicationsUrl"
-    $response = Invoke-RestMethod -Uri $applicationsUrl -UseBasicParsing
-    $applications = $response
-    Write-Output "Aplikace byly načteny z URL."
+
+    # Získání obsahu z URL
+    $response = Invoke-WebRequest -Uri $applicationsUrl -UseBasicParsing
+    
+    if ($response.StatusCode -eq 200) {
+        # Parsování obsahu jako JSON
+        $applications = $response.Content | ConvertFrom-Json
+        Write-Output "Aplikace byly úspěšně načteny z URL."
+    } else {
+        Write-Error "Chybný stavový kód HTTP: $($response.StatusCode)"
+        return
+    }
 } catch {
     Write-Error "Chyba při načítání JSON souboru z URL: $_"
     return
 }
+
 
 # Funkce pro zobrazení aplikací podle kategorie
 function ShowApplications($category) {
