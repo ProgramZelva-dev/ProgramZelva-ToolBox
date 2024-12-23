@@ -1,5 +1,14 @@
 Write-Output "Starting ProgramZelva ToolBox..."
 
+# Nastaveni bufferu a okna PowerShell
+$bufferWidth = 120
+$bufferHeight = 300  # Dostatecne velky buffer
+$Host.UI.RawUI.BufferSize = New-Object Management.Automation.Host.Size($bufferWidth, $bufferHeight)
+
+$windowWidth = 120
+$windowHeight = 30  # Rozumna velikost okna, mensi nez buffer
+$Host.UI.RawUI.WindowSize = New-Object Management.Automation.Host.Size($windowWidth, $windowHeight)
+
 # Nacteni WPF
 Add-Type -AssemblyName PresentationFramework
 
@@ -26,7 +35,7 @@ Add-Type -AssemblyName PresentationFramework
                  Margin='10'>
             <ListBoxItem Content='Browsers' Foreground='Black'/>
             <ListBoxItem Content='Communications' Foreground='Black'/>
-            <ListBoxItem Content='MultimediaTools' Foreground='Black'/>
+            <ListBoxItem Content='Multimedia Tools' Foreground='Black'/>
             <ListBoxItem Content='Utilities' Foreground='Black'/>
             <ListBoxItem Content='Productivity' Foreground='Black'/>
         </ListBox>
@@ -61,25 +70,17 @@ try {
     return
 }
 
-# Definice aplikaci primo v kodu
-$applications = @{
-    Browsers = @(
-        @{ Name = "Firefox"; WingetID = "Mozilla.Firefox" },
-        @{ Name = "Google Chrome"; WingetID = "Google.Chrome" }
-    )
-    Communications = @(
-        @{ Name = "Discord"; WingetID = "Discord.Discord" }
-    )
-    MultimediaTools = @(
-        @{ Name = "Audacity"; WingetID = "Audacity.Audacity" }
-    )
-    Utilities = @(
-        @{ Name = "7-Zip"; WingetID = "7zip.7zip" }
-    )
-    Productivity = @(
-        @{ Name = "Microsoft Office"; WingetID = "Microsoft.Office" }
-    )
+# Cesta k souboru aplikaci (relativni cesta k aktualnimu adresari)
+$applicationsFilePath = Join-Path (Get-Location) "applications.json"
+
+# Kontrola, zda soubor aplikaci existuje
+if (-not (Test-Path $applicationsFilePath)) {
+    Write-Error "Soubor aplikaci nebyl nalezen!"
+    return
 }
+
+# Nacteni aplikaci z JSON souboru
+$applications = Get-Content -Path $applicationsFilePath | ConvertFrom-Json
 
 # Funkce pro zobrazeni aplikaci podle kategorie
 function ShowApplications($category) {
@@ -90,8 +91,9 @@ function ShowApplications($category) {
     }
     $appList.Children.Clear()
 
-    if ($applications.ContainsKey($category)) {
-        $categoryApplications = $applications[$category]
+    # Zobrazeni aplikaci pro danou kategorii
+    if ($applications.PSObject.Properties.Match($category).Count -gt 0) {
+        $categoryApplications = $applications.$category
         foreach ($app in $categoryApplications) {
             $checkBox = New-Object System.Windows.Controls.CheckBox
             $checkBox.Content = $app.Name
@@ -105,20 +107,30 @@ function ShowApplications($category) {
     }
 }
 
-# Inicialni zobrazeni kategorii
+# Inicialni kategorie
+Write-Output "Zobrazeni aplikaci pro inicialni kategorii..."
 ShowApplications "Browsers"
 
-# Udalosti pro kategorie
+# Kategorie z ListBoxu
 $categoryList = $window.FindName("CategoryList")
+if ($categoryList -eq $null) {
+    Write-Error "Kategorie List nebyla nalezena."
+    return
+}
 $categoryList.add_SelectionChanged({
     $selectedCategory = $categoryList.SelectedItem.Content
-    ShowApplications $selectedCategory
+    if ($selectedCategory -and $applications.PSObject.Properties.Match($selectedCategory).Count -gt 0) {
+        ShowApplications $selectedCategory
+    } else {
+        Write-Output "Vybrana kategorie '$selectedCategory' neni platna."
+    }
 })
 
 # Tlacitka pro instalaci a odinstalaci
 $installButton = $window.FindName("InstallButton")
 $installButton.Add_Click({
     Write-Output "Instalace aplikaci..."
+
     $appList = $window.FindName("AppList")
     foreach ($child in $appList.Children) {
         if ($child.IsChecked -eq $true) {
@@ -133,6 +145,7 @@ $installButton.Add_Click({
 $uninstallButton = $window.FindName("UninstallButton")
 $uninstallButton.Add_Click({
     Write-Output "Odinstalace aplikaci..."
+
     $appList = $window.FindName("AppList")
     foreach ($child in $appList.Children) {
         if ($child.IsChecked -eq $true) {
@@ -144,18 +157,22 @@ $uninstallButton.Add_Click({
     Write-Output "Odinstalace dokoncena."
 })
 
-# Tlacitko pro verze
+# Tlacitko pro zobrazeni verze
 $versionButton = $window.FindName("VersionButton")
 $versionButton.Add_Click({
     $versionWindow = New-Object System.Windows.Window
-    $versionWindow.Title = "Verze ProgramZelva ToolBox"
+    $versionWindow.Title = "Version ProgramZelva ToolBox"
     $versionWindow.Width = 600
     $versionWindow.Height = 300
+    $versionWindow.WindowStartupLocation = 'CenterScreen'
     $versionWindow.ResizeMode = 'CanResize'
+    $versionWindow.MinWidth = 400
+    $versionWindow.MinHeight = 200
 
     $textBlock = New-Object System.Windows.Controls.TextBlock
     $textBlock.Text = "ProgramZelva ToolBox pre-release 1.0`n
-Tato verze je urcena pro testovani."
+This version is for testing and development.`n
+More applications planned for version 1.1.`n"
     $textBlock.HorizontalAlignment = 'Center'
     $textBlock.VerticalAlignment = 'Center'
 
@@ -164,4 +181,9 @@ Tato verze je urcena pro testovani."
 })
 
 # Zobrazeni okna
-$window.ShowDialog()
+try {
+    $window.ShowDialog()
+    Write-Output "Okno zobrazeno uspesne."
+} catch {
+    Write-Error "Nepodarilo se zobrazit okno: $_"
+}
