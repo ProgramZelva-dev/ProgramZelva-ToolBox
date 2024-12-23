@@ -1,3 +1,4 @@
+# Starting Program
 Write-Output "Starting ProgramZelva ToolBox..."
 
 # Načtení WPF
@@ -24,11 +25,11 @@ Add-Type -AssemblyName PresentationFramework
         <!-- Kategorie vlevo -->
         <ListBox x:Name='CategoryList' Grid.Row='1' Grid.Column='0' Background='#f5f5f5' Foreground='Black' 
                  Margin='10'>
-            <ListBoxItem Content='Prohlížeče' Foreground='Black'/>
-            <ListBoxItem Content='Komunikace' Foreground='Black'/>
-            <ListBoxItem Content='Multimediální nástroje' Foreground='Black'/>
-            <ListBoxItem Content='Nástroje pro Windows' Foreground='Black'/>
-            <ListBoxItem Content='Pracovní nástroje' Foreground='Black'/>
+            <ListBoxItem Content='Browsers' Foreground='Black'/>
+            <ListBoxItem Content='Communications' Foreground='Black'/>
+            <ListBoxItem Content='Multimedia Tools' Foreground='Black'/>
+            <ListBoxItem Content='Utilities' Foreground='Black'/>
+            <ListBoxItem Content='Productivity' Foreground='Black'/>
         </ListBox>
 
         <!-- Aplikace vpravo -->
@@ -60,29 +61,16 @@ try {
     return
 }
 
-# URL souboru aplikací
-$applicationsUrl = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
+# URL k JSON souboru
+$url = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
 
-# Načtení aplikací z JSON souboru z webu
+# Načtení aplikací z URL
 try {
-    Write-Output "Načítám aplikace z URL: $applicationsUrl"
-
-    # Získání obsahu z URL
-    $response = Invoke-WebRequest -Uri $applicationsUrl -UseBasicParsing
-    
-    if ($response.StatusCode -eq 200) {
-        # Parsování obsahu jako JSON
-        $applications = $response.Content | ConvertFrom-Json
-        Write-Output "Aplikace byly úspěšně načteny z URL."
-    } else {
-        Write-Error "Chybný stavový kód HTTP: $($response.StatusCode)"
-        return
-    }
+    $jsonData = Invoke-RestMethod -Uri $url -Method Get
 } catch {
-    Write-Error "Chyba při načítání JSON souboru z URL: $_"
+    Write-Error "Nepodařilo se načíst data z URL: $_"
     return
 }
-
 
 # Funkce pro zobrazení aplikací podle kategorie
 function ShowApplications($category) {
@@ -94,8 +82,8 @@ function ShowApplications($category) {
     $appList.Children.Clear()
 
     # Zobrazení aplikací pro danou kategorii
-    if ($applications.PSObject.Properties.Match($category).Count -gt 0) {
-        $categoryApplications = $applications.$category
+    if ($jsonData.PSObject.Properties.Match($category).Count -gt 0) {
+        $categoryApplications = $jsonData.$category
         foreach ($app in $categoryApplications) {
             $checkBox = New-Object System.Windows.Controls.CheckBox
             $checkBox.Content = $app.Name
@@ -107,7 +95,7 @@ function ShowApplications($category) {
 }
 
 # Zobrazení výchozí kategorie
-ShowApplications "Prohlížeče"
+ShowApplications "Browsers"
 
 # Kategorie z ListBoxu
 $categoryList = $window.FindName("CategoryList")
@@ -115,58 +103,59 @@ if ($categoryList -eq $null) {
     Write-Error "Kategorie List nebyla nalezena."
     return
 }
-
-# Připojení události pro změnu výběru kategorie
 $categoryList.add_SelectionChanged({
     $selectedCategory = $categoryList.SelectedItem.Content
-    if ($selectedCategory -and $applications.PSObject.Properties.Match($selectedCategory).Count -gt 0) {
+    if ($selectedCategory -and $jsonData.PSObject.Properties.Match($selectedCategory).Count -gt 0) {
         ShowApplications $selectedCategory
     }
 })
 
-# Tlačítka pro instalaci a odinstalaci
-$installButton = $window.FindName("InstallButton")
-$installButton.Add_Click({
-    Write-Output "Instalace aplikací..."
+# Funkce pro práci s tlačítky
+function InstallSelectedApps {
     $appList = $window.FindName("AppList")
     foreach ($child in $appList.Children) {
         if ($child.IsChecked -eq $true) {
-            $appID = $child.Tag
-            Write-Output "Instalace aplikace: $($child.Content) ($appID)"
-            Start-Process -FilePath "winget" -ArgumentList "install $appID" -Wait
+            $appName = $child.Content
+            $wingetID = $child.Tag
+            Write-Output "Instaluji aplikaci: $appName (Winget ID: $wingetID)"
+            Start-Process -Wait -FilePath "winget" -ArgumentList "install --id $wingetID"
         }
     }
-})
+}
+
+function UninstallSelectedApps {
+    $appList = $window.FindName("AppList")
+    foreach ($child in $appList.Children) {
+        if ($child.IsChecked -eq $true) {
+            $appName = $child.Content
+            $wingetID = $child.Tag
+            Write-Output "Odinstalovávám aplikaci: $appName (Winget ID: $wingetID)"
+            Start-Process -Wait -FilePath "winget" -ArgumentList "uninstall --id $wingetID"
+        }
+    }
+}
+
+function ShowVersionInfo {
+    $appList = $window.FindName("AppList")
+    foreach ($child in $appList.Children) {
+        if ($child.IsChecked -eq $true) {
+            $appName = $child.Content
+            $wingetID = $child.Tag
+            Write-Output "Zjišťuji verzi aplikace: $appName (Winget ID: $wingetID)"
+            Start-Process -NoNewWindow -Wait -FilePath "winget" -ArgumentList "show --id $wingetID"
+        }
+    }
+}
+
+# Připojení tlačítek
+$installButton = $window.FindName("InstallButton")
+$installButton.Add_Click({ InstallSelectedApps })
 
 $uninstallButton = $window.FindName("UninstallButton")
-$uninstallButton.Add_Click({
-    Write-Output "Odinstalace aplikací..."
-    $appList = $window.FindName("AppList")
-    foreach ($child in $appList.Children) {
-        if ($child.IsChecked -eq $true) {
-            $appID = $child.Tag
-            Write-Output "Odinstalace aplikace: $($child.Content) ($appID)"
-            Start-Process -FilePath "winget" -ArgumentList "uninstall $appID" -Wait
-        }
-    }
-})
+$uninstallButton.Add_Click({ UninstallSelectedApps })
 
 $versionButton = $window.FindName("VersionButton")
-$versionButton.Add_Click({
-    $versionWindow = New-Object System.Windows.Window
-    $versionWindow.Title = "Verze ProgramZelva ToolBox"
-    $versionWindow.Width = 600
-    $versionWindow.Height = 300
-    $versionWindow.WindowStartupLocation = 'CenterScreen'
-
-    $textBlock = New-Object System.Windows.Controls.TextBlock
-    $textBlock.Text = "ProgramZelva ToolBox pre-release 1.0`nTato verze je určena pro testování a vývoj.`nNeobsahuje moc aplikací, ale je plánováno přidání více aplikací ve verzi 1.1.`n"
-    $textBlock.HorizontalAlignment = 'Center'
-    $textBlock.VerticalAlignment = 'Center'
-
-    $versionWindow.Content = $textBlock
-    $versionWindow.ShowDialog()
-})
+$versionButton.Add_Click({ ShowVersionInfo })
 
 # Zobrazení okna
 try {
