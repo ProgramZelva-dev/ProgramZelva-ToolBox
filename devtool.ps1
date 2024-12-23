@@ -60,20 +60,17 @@ try {
     return
 }
 
-# Cesta k souboru aplikací (relativní cesta k aktuálnímu adresáři)
-$applicationsFilePath = Join-Path (Get-Location) "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
+# Cesta k souboru aplikací (webová URL)
+$applicationsUrl = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
 
-# Kontrola, zda soubor aplikací existuje
-if (-not (Test-Path $applicationsFilePath)) {
-    Write-Error "Soubor aplikací nebyl nalezen!"
-    return
-}
-
-# Načtení aplikací z JSON souboru
+# Načtení aplikací z JSON souboru z webu
 try {
-    $applications = Get-Content -Path $applicationsFilePath | ConvertFrom-Json
+    Write-Output "Načítám aplikace z URL: $applicationsUrl"
+    $response = Invoke-RestMethod -Uri $applicationsUrl -UseBasicParsing
+    $applications = $response
+    Write-Output "Aplikace byly načteny z URL."
 } catch {
-    Write-Error "Chyba při načítání JSON souboru: $_"
+    Write-Error "Chyba při načítání JSON souboru z URL: $_"
     return
 }
 
