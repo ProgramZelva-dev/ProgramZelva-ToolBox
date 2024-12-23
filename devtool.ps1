@@ -1,9 +1,9 @@
 Write-Output "Starting ProgramZelva ToolBox..."
 
-# Nacteni WPF
+# Načtení WPF
 Add-Type -AssemblyName PresentationFramework
 
-# Vytvoreni okna
+# Vytvoření okna
 [xml]$xaml = @"
 <Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' 
         xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
@@ -24,17 +24,17 @@ Add-Type -AssemblyName PresentationFramework
         <!-- Kategorie vlevo -->
         <ListBox x:Name='CategoryList' Grid.Row='1' Grid.Column='0' Background='#f5f5f5' Foreground='Black' 
                  Margin='10'>
-            <ListBoxItem Content='Browsers' Foreground='Black'/>
-            <ListBoxItem Content='Communications' Foreground='Black'/>
-            <ListBoxItem Content='Multimedia Tools' Foreground='Black'/>
-            <ListBoxItem Content='Utilities' Foreground='Black'/>
-            <ListBoxItem Content='Productivity' Foreground='Black'/>
+            <ListBoxItem Content='Prohlížeče' Foreground='Black'/>
+            <ListBoxItem Content='Komunikace' Foreground='Black'/>
+            <ListBoxItem Content='Multimediální nástroje' Foreground='Black'/>
+            <ListBoxItem Content='Nástroje pro Windows' Foreground='Black'/>
+            <ListBoxItem Content='Pracovní nástroje' Foreground='Black'/>
         </ListBox>
 
         <!-- Aplikace vpravo -->
         <ScrollViewer Grid.Row='1' Grid.Column='1' Margin='10' Background='Transparent'>
             <StackPanel x:Name='AppList'>
-                <!-- Naplni se programy -->
+                <!-- Naplní se programy -->
             </StackPanel>
         </ScrollViewer>
 
@@ -55,25 +55,29 @@ Add-Type -AssemblyName PresentationFramework
 $reader = (New-Object System.Xml.XmlNodeReader $xaml)
 try {
     $window = [Windows.Markup.XamlReader]::Load($reader)
-    Write-Output "Okno uspesne nacteno."
 } catch {
-    Write-Error "Nepodarilo se nactit okno z XAML: $_"
+    Write-Error "Nepodařilo se načíst okno z XAML: $_"
     return
 }
 
-# Cesta k souboru aplikaci (relativni cesta k aktualnimu adresari)
-$applicationsFilePath = Join-Path (Get-Location) "applications.json"
+# Cesta k souboru aplikací (relativní cesta k aktuálnímu adresáři)
+$applicationsFilePath = Join-Path (Get-Location) "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
 
-# Kontrola, zda soubor aplikaci existuje
+# Kontrola, zda soubor aplikací existuje
 if (-not (Test-Path $applicationsFilePath)) {
-    Write-Error "Soubor aplikaci nebyl nalezen!"
+    Write-Error "Soubor aplikací nebyl nalezen!"
     return
 }
 
-# Nacteni aplikaci z JSON souboru
-$applications = Get-Content -Path $applicationsFilePath | ConvertFrom-Json
+# Načtení aplikací z JSON souboru
+try {
+    $applications = Get-Content -Path $applicationsFilePath | ConvertFrom-Json
+} catch {
+    Write-Error "Chyba při načítání JSON souboru: $_"
+    return
+}
 
-# Funkce pro zobrazeni aplikaci podle kategorie
+# Funkce pro zobrazení aplikací podle kategorie
 function ShowApplications($category) {
     $appList = $window.FindName("AppList")
     if ($appList -eq $null) {
@@ -82,7 +86,7 @@ function ShowApplications($category) {
     }
     $appList.Children.Clear()
 
-    # Zobrazeni aplikaci pro danou kategorii
+    # Zobrazení aplikací pro danou kategorii
     if ($applications.PSObject.Properties.Match($category).Count -gt 0) {
         $categoryApplications = $applications.$category
         foreach ($app in $categoryApplications) {
@@ -92,15 +96,11 @@ function ShowApplications($category) {
             $checkBox.Foreground = [System.Windows.Media.Brushes]::Black
             $appList.Children.Add($checkBox)
         }
-        Write-Output "Aplikace uspesne nacteny pro kategorii: $category"
-    } else {
-        Write-Output "Kategorie '$category' neexistuje."
     }
 }
 
-# Inicialni kategorie
-Write-Output "Zobrazeni aplikaci pro inicialni kategorii..."
-ShowApplications "Browsers"
+# Zobrazení výchozí kategorie
+ShowApplications "Prohlížeče"
 
 # Kategorie z ListBoxu
 $categoryList = $window.FindName("CategoryList")
@@ -108,22 +108,19 @@ if ($categoryList -eq $null) {
     Write-Error "Kategorie List nebyla nalezena."
     return
 }
+
+# Připojení události pro změnu výběru kategorie
 $categoryList.add_SelectionChanged({
     $selectedCategory = $categoryList.SelectedItem.Content
-    # Overeni, ze kategorie je platna
     if ($selectedCategory -and $applications.PSObject.Properties.Match($selectedCategory).Count -gt 0) {
         ShowApplications $selectedCategory
-    } else {
-        Write-Output "Vybrana kategorie '$selectedCategory' neni platna."
     }
 })
 
 # Tlačítka pro instalaci a odinstalaci
 $installButton = $window.FindName("InstallButton")
 $installButton.Add_Click({
-    Write-Output "Instalace aplikaci..."
-
-    # Instalace vybranych aplikaci
+    Write-Output "Instalace aplikací..."
     $appList = $window.FindName("AppList")
     foreach ($child in $appList.Children) {
         if ($child.IsChecked -eq $true) {
@@ -132,14 +129,11 @@ $installButton.Add_Click({
             Start-Process -FilePath "winget" -ArgumentList "install $appID" -Wait
         }
     }
-    Write-Output "Instalace dokoncena."
 })
 
 $uninstallButton = $window.FindName("UninstallButton")
 $uninstallButton.Add_Click({
-    Write-Output "Odinstalace aplikaci..."
-
-    # Odinstalace vybranych aplikaci
+    Write-Output "Odinstalace aplikací..."
     $appList = $window.FindName("AppList")
     foreach ($child in $appList.Children) {
         if ($child.IsChecked -eq $true) {
@@ -148,29 +142,18 @@ $uninstallButton.Add_Click({
             Start-Process -FilePath "winget" -ArgumentList "uninstall $appID" -Wait
         }
     }
-    Write-Output "Odinstalace dokoncena."
 })
 
-## Tlačítko pro zobrazení verze (jako samostatne okno)
 $versionButton = $window.FindName("VersionButton")
 $versionButton.Add_Click({
     $versionWindow = New-Object System.Windows.Window
-    $versionWindow.Title = "Verze ProgramZelva  ToolBox"
-    $versionWindow.Width = 600   # Zvětšení šířky okna
-    $versionWindow.Height = 300  # Zvětšení výšky okna
+    $versionWindow.Title = "Verze ProgramZelva ToolBox"
+    $versionWindow.Width = 600
+    $versionWindow.Height = 300
     $versionWindow.WindowStartupLocation = 'CenterScreen'
 
-    # Umožnění změny velikosti okna verze
-    $versionWindow.ResizeMode = 'CanResize'  # Povolí změnu velikosti okna
-
-    # Nastavení minimální velikosti okna (tak, aby text byl stále viditelný)
-    $versionWindow.MinWidth = 400
-    $versionWindow.MinHeight = 200
-
     $textBlock = New-Object System.Windows.Controls.TextBlock
-    $textBlock.Text = "ProgramZelva ToolBox pre-release 1.0`n
-Tato verze je urcena pro testovani a vyvoj.`n
-Neobsahuje moc aplikaci ale je planovano pridani vice aplikaci ve verzi 1.1.`n"
+    $textBlock.Text = "ProgramZelva ToolBox pre-release 1.0`nTato verze je určena pro testování a vývoj.`nNeobsahuje moc aplikací, ale je plánováno přidání více aplikací ve verzi 1.1.`n"
     $textBlock.HorizontalAlignment = 'Center'
     $textBlock.VerticalAlignment = 'Center'
 
@@ -178,12 +161,9 @@ Neobsahuje moc aplikaci ale je planovano pridani vice aplikaci ve verzi 1.1.`n"
     $versionWindow.ShowDialog()
 })
 
-
-
-# Zobrazeni okna
+# Zobrazení okna
 try {
     $window.ShowDialog()
-    Write-Output "Okno zobrazeno uspesne."
 } catch {
-    Write-Error "Nepodarilo se zobrazit okno: $_"
+    Write-Error "Nepodařilo se zobrazit okno: $_"
 }
