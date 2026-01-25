@@ -1,5 +1,5 @@
 {
-  "Prohlížeče": [
+  "Browsers": [
     {"Name": "Firefox", "WingetID": "Mozilla.Firefox"},
     {"Name": "Google Chrome", "WingetID": "Google.Chrome"}
   ],
@@ -39,3 +39,4 @@
     {"Name": "Dropbox", "WingetID": "Dropbox.Dropbox"}
   ]
 }
+
