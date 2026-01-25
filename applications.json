@@ -3,18 +3,18 @@
     {"Name": "Firefox", "WingetID": "Mozilla.Firefox"},
     {"Name": "Google Chrome", "WingetID": "Google.Chrome"}
   ],
-  "Komunikace": [
+  "Communications": [
     {"Name": "Discord", "WingetID": "Discord.Discord"}
   ],
-  "Multimediální nástroje": [
+  "Multimedia": [
     {"Name": "Audacity", "WingetID": "Audacity.Audacity"},
     {"Name": "VLC Media Player", "WingetID": "VideoLAN.VLC"}
   ],
-  "Nástroje pro Windows": [
+  "Utilities": [
     {"Name": "7-Zip", "WingetID": "7zip.7zip"},
     {"Name": "WinRAR", "WingetID": "win.rar GmbH.WinRAR"}
   ],
-  "Pracovní nástroje": [
+  "Productivity": [
     {"Name": "Microsoft Office", "WingetID": "Microsoft.Office"},
     {"Name": "Visual Studio Code", "WingetID": "Microsoft.VisualStudioCode"}
   ],
@@ -39,4 +39,5 @@
     {"Name": "Dropbox", "WingetID": "Dropbox.Dropbox"}
   ]
 }
+
 
