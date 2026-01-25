@@ -1,15 +1,16 @@
 # Starting Program
 Write-Output "Starting ProgramZelva ToolBox..."
 
-# Načtení WPF
 Add-Type -AssemblyName PresentationFramework
 
-# Vytvoření okna
+# ---------- XAML ----------
 [xml]$xaml = @"
-<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' 
+<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
         xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-        Title='ProgramZelva ToolBox pre-release 1.0' Height='600' Width='1000' 
-        ResizeMode='CanResize' MinWidth='1000' MinHeight='600'
+        Title='ProgramZelva ToolBox pre-release 1.0'
+        Height='600' Width='1000'
+        ResizeMode='CanResize'
+        MinWidth='1000' MinHeight='600'
         Background='White'>
     <Grid>
         <Grid.RowDefinitions>
@@ -22,145 +23,113 @@ Add-Type -AssemblyName PresentationFramework
             <ColumnDefinition Width='*'/>
         </Grid.ColumnDefinitions>
 
-        <!-- Kategorie vlevo -->
-        <ListBox x:Name='CategoryList' Grid.Row='1' Grid.Column='0' Background='#f5f5f5' Foreground='Black' 
-                 Margin='10'>
-            <ListBoxItem Content='Browsers' Foreground='Black'/>
-            <ListBoxItem Content='Communications' Foreground='Black'/>
-            <ListBoxItem Content='Multimedia Tools' Foreground='Black'/>
-            <ListBoxItem Content='Utilities' Foreground='Black'/>
-            <ListBoxItem Content='Productivity' Foreground='Black'/>
+        <ListBox x:Name='CategoryList'
+                 Grid.Row='1' Grid.Column='0'
+                 Margin='10'
+                 Background='#f5f5f5'>
+            <ListBoxItem Content='Browsers'/>
+            <ListBoxItem Content='Communications'/>
+            <ListBoxItem Content='Multimedia'/>
+            <ListBoxItem Content='Utilities'/>
+            <ListBoxItem Content='Productivity'/>
         </ListBox>
 
-        <!-- Aplikace vpravo -->
-        <ScrollViewer Grid.Row='1' Grid.Column='1' Margin='10' Background='Transparent'>
-            <StackPanel x:Name='AppList'>
-                <!-- Naplní se programy -->
-            </StackPanel>
+        <ScrollViewer Grid.Row='1' Grid.Column='1' Margin='10'>
+            <StackPanel x:Name='AppList'/>
         </ScrollViewer>
 
-        <!-- Tlačítka -->
-        <StackPanel Grid.Row='2' Grid.ColumnSpan='2' Orientation='Horizontal' HorizontalAlignment='Center' Margin='10'>
-            <Button Content='Install Selected' Width='150' Height='40' Margin='10' 
-                    Background='#007ACC' Foreground='White' x:Name='InstallButton'/>
-            <Button Content='Uninstall Selected' Width='150' Height='40' Margin='10' 
-                    Background='#FF5733' Foreground='White' x:Name='UninstallButton'/>
-            <Button Content='Version info' Width='150' Height='40' Margin='10' 
-                    Background='#32CD32' Foreground='White' x:Name='VersionButton'/>
+        <StackPanel Grid.Row='2' Grid.ColumnSpan='2'
+                    Orientation='Horizontal'
+                    HorizontalAlignment='Center'
+                    Margin='10'>
+            <Button x:Name='InstallButton' Content='Install Selected'
+                    Width='150' Height='40' Margin='10'
+                    Background='#007ACC' Foreground='White'/>
+            <Button x:Name='UninstallButton' Content='Uninstall Selected'
+                    Width='150' Height='40' Margin='10'
+                    Background='#FF5733' Foreground='White'/>
+            <Button x:Name='VersionButton' Content='Version info'
+                    Width='150' Height='40' Margin='10'
+                    Background='#32CD32' Foreground='White'/>
         </StackPanel>
     </Grid>
 </Window>
 "@
 
-# Načtení XAML a vytvoření GUI
-$reader = (New-Object System.Xml.XmlNodeReader $xaml)
-try {
-    $window = [Windows.Markup.XamlReader]::Load($reader)
-} catch {
-    Write-Error "Nepodařilo se načíst okno z XAML: $_"
-    return
+$reader = New-Object System.Xml.XmlNodeReader $xaml
+$window = [Windows.Markup.XamlReader]::Load($reader)
+
+# ---------- JSON ----------
+$url = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
+$jsonData = Invoke-RestMethod -Uri $url
+
+# ---------- Mapování UI → JSON ----------
+$CategoryMap = @{
+    "Browsers"       = "Browsers"
+    "Communications" = "Communications"
+    "Multimedia"     = "MultimediaTools"
+    "Utilities"      = "Utilities"
+    "Productivity"   = "Productivity"
 }
 
-# URL k JSON souboru
-$url = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/refs/heads/main/applications.json"
-
-# Načtení aplikací z URL
-try {
-    $jsonData = Invoke-RestMethod -Uri $url -Method Get
-} catch {
-    Write-Error "Nepodařilo se načíst data z URL: $_"
-    return
-}
-
-# Funkce pro zobrazení aplikací podle kategorie
-function ShowApplications($category) {
+# ---------- Funkce ----------
+function ShowApplications ($uiCategory) {
+    $jsonKey = $CategoryMap[$uiCategory]
     $appList = $window.FindName("AppList")
-    if ($appList -eq $null) {
-        Write-Error "AppList nebyl nalezen."
-        return
-    }
     $appList.Children.Clear()
 
-    # Zobrazení aplikací pro danou kategorii
-    if ($jsonData.PSObject.Properties.Match($category).Count -gt 0) {
-        $categoryApplications = $jsonData.$category
-        foreach ($app in $categoryApplications) {
-            $checkBox = New-Object System.Windows.Controls.CheckBox
-            $checkBox.Content = $app.Name
-            $checkBox.Tag = $app.WingetID
-            $checkBox.Foreground = [System.Windows.Media.Brushes]::Black
-            $appList.Children.Add($checkBox)
-        }
+    foreach ($app in $jsonData.$jsonKey) {
+        $cb = New-Object System.Windows.Controls.CheckBox
+        $cb.Content = $app.Name
+        $cb.Tag = $app.WingetID
+        $cb.Margin = "5"
+        $appList.Children.Add($cb)
     }
 }
 
-# Zobrazení výchozí kategorie
-ShowApplications "Browsers"
-
-# Kategorie z ListBoxu
-$categoryList = $window.FindName("CategoryList")
-if ($categoryList -eq $null) {
-    Write-Error "Kategorie List nebyla nalezena."
-    return
-}
-$categoryList.add_SelectionChanged({
-    $selectedCategory = $categoryList.SelectedItem.Content
-    if ($selectedCategory -and $jsonData.PSObject.Properties.Match($selectedCategory).Count -gt 0) {
-        ShowApplications $selectedCategory
+function RunWinget ($args) {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        [System.Windows.MessageBox]::Show("Winget není dostupný.","Chyba")
+        return
     }
-})
+    Start-Process winget -ArgumentList $args -NoNewWindow
+}
 
-# Funkce pro práci s tlačítky
 function InstallSelectedApps {
-    $appList = $window.FindName("AppList")
-    foreach ($child in $appList.Children) {
-        if ($child.IsChecked -eq $true) {
-            $appName = $child.Content
-            $wingetID = $child.Tag
-            Write-Output "Instaluji aplikaci: $appName (Winget ID: $wingetID)"
-            Start-Process -Wait -FilePath "winget" -ArgumentList "install --id $wingetID"
+    foreach ($c in $window.FindName("AppList").Children) {
+        if ($c.IsChecked) {
+            RunWinget "install --id $($c.Tag) --scope user -e"
         }
     }
 }
 
 function UninstallSelectedApps {
-    $appList = $window.FindName("AppList")
-    foreach ($child in $appList.Children) {
-        if ($child.IsChecked -eq $true) {
-            $appName = $child.Content
-            $wingetID = $child.Tag
-            Write-Output "Odinstalovávám aplikaci: $appName (Winget ID: $wingetID)"
-            Start-Process -Wait -FilePath "winget" -ArgumentList "uninstall --id $wingetID"
+    foreach ($c in $window.FindName("AppList").Children) {
+        if ($c.IsChecked) {
+            RunWinget "uninstall --id $($c.Tag) -e"
         }
     }
 }
 
 function ShowVersionInfo {
-    $appList = $window.FindName("AppList")
-    foreach ($child in $appList.Children) {
-        if ($child.IsChecked -eq $true) {
-            $appName = $child.Content
-            $wingetID = $child.Tag
-            Write-Output "Zjišťuji verzi aplikace: $appName (Winget ID: $wingetID)"
-            Start-Process -NoNewWindow -Wait -FilePath "winget" -ArgumentList "show --id $wingetID"
+    foreach ($c in $window.FindName("AppList").Children) {
+        if ($c.IsChecked) {
+            RunWinget "show --id $($c.Tag)"
         }
     }
 }
 
-# Připojení tlačítek
-$installButton = $window.FindName("InstallButton")
-$installButton.Add_Click({ InstallSelectedApps })
+# ---------- Events ----------
+$window.FindName("CategoryList").Add_SelectionChanged({
+    if ($_.AddedItems.Count -gt 0) {
+        ShowApplications $_.AddedItems[0].Content
+    }
+})
 
-$uninstallButton = $window.FindName("UninstallButton")
-$uninstallButton.Add_Click({ UninstallSelectedApps })
+$window.FindName("InstallButton").Add_Click({ InstallSelectedApps })
+$window.FindName("UninstallButton").Add_Click({ UninstallSelectedApps })
+$window.FindName("VersionButton").Add_Click({ ShowVersionInfo })
 
-$versionButton = $window.FindName("VersionButton")
-$versionButton.Add_Click({ ShowVersionInfo })
-
-# Zobrazení okna
-try {
-    $window.ShowDialog()
-} catch {
-    Write-Error "Nepodařilo se zobrazit okno: $_"
-}
-
+# Default
+ShowApplications "Browsers"
+$window.ShowDialog() | Out-Null
