@@ -62,7 +62,7 @@ try {
 }
 
 # URL k JSON souboru
-$url = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
+$url = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/refs/heads/main/applications.json"
 
 # Načtení aplikací z URL
 try {
@@ -163,3 +163,4 @@ try {
 } catch {
     Write-Error "Nepodařilo se zobrazit okno: $_"
 }
+
