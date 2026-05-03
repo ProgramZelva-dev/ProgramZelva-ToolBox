@@ -1,135 +1,113 @@
-# Starting Program
-Write-Output "Starting ProgramZelva ToolBox..."
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
-Add-Type -AssemblyName PresentationFramework
+# --- OKNO (ŠIRŠÍ) ---
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "PZ Installer"
+$form.Size = New-Object System.Drawing.Size(900,520)
+$form.MinimumSize = New-Object System.Drawing.Size(900,520)
+$form.StartPosition = "CenterScreen"
+$form.BackColor = [System.Drawing.Color]::FromArgb(25,25,25)
+$form.FormBorderStyle = "FixedSingle"
+$form.MaximizeBox = $false
 
-# ---------- XAML ----------
-[xml]$xaml = @"
-<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-        xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-        Title='ProgramZelva ToolBox pre-release 1.0'
-        Height='600' Width='1000'
-        ResizeMode='CanResize'
-        MinWidth='1000' MinHeight='600'
-        Background='White'>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height='Auto'/>
-            <RowDefinition Height='*'/>
-            <RowDefinition Height='Auto'/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width='200'/>
-            <ColumnDefinition Width='*'/>
-        </Grid.ColumnDefinitions>
+# --- INPUT ---
+$textBox = New-Object System.Windows.Forms.TextBox
+$textBox.Width = 650
+$textBox.Location = New-Object System.Drawing.Point(120,30)
+$textBox.Font = New-Object System.Drawing.Font("Segoe UI",13)
+$textBox.BackColor = [System.Drawing.Color]::FromArgb(40,40,40)
+$textBox.ForeColor = [System.Drawing.Color]::White
+$form.Controls.Add($textBox)
 
-        <ListBox x:Name='CategoryList'
-                 Grid.Row='1' Grid.Column='0'
-                 Margin='10'
-                 Background='#f5f5f5'>
-            <ListBoxItem Content='Browsers'/>
-            <ListBoxItem Content='Communications'/>
-            <ListBoxItem Content='Multimedia'/>
-            <ListBoxItem Content='Utilities'/>
-            <ListBoxItem Content='Productivity'/>
-        </ListBox>
+# --- SEARCH ---
+$searchBtn = New-Object System.Windows.Forms.Button
+$searchBtn.Text = "Search"
+$searchBtn.Location = New-Object System.Drawing.Point(390,70)
+$searchBtn.Size = New-Object System.Drawing.Size(100,35)
+$searchBtn.BackColor = [System.Drawing.Color]::FromArgb(55,55,55)
+$searchBtn.ForeColor = [System.Drawing.Color]::White
+$searchBtn.FlatStyle = "Flat"
+$form.Controls.Add($searchBtn)
 
-        <ScrollViewer Grid.Row='1' Grid.Column='1' Margin='10'>
-            <StackPanel x:Name='AppList'/>
-        </ScrollViewer>
+# --- LIST ---
+$listBox = New-Object System.Windows.Forms.ListBox
+$listBox.Size = New-Object System.Drawing.Size(860,320)
+$listBox.Location = New-Object System.Drawing.Point(20,120)
+$listBox.BackColor = [System.Drawing.Color]::FromArgb(35,35,35)
+$listBox.ForeColor = [System.Drawing.Color]::White
+$listBox.BorderStyle = "None"
+$listBox.Font = New-Object System.Drawing.Font("Consolas",11)
+$listBox.ItemHeight = 24
+$form.Controls.Add($listBox)
 
-        <StackPanel Grid.Row='2' Grid.ColumnSpan='2'
-                    Orientation='Horizontal'
-                    HorizontalAlignment='Center'
-                    Margin='10'>
-            <Button x:Name='InstallButton' Content='Install Selected'
-                    Width='150' Height='40' Margin='10'
-                    Background='#007ACC' Foreground='White'/>
-            <Button x:Name='UninstallButton' Content='Uninstall Selected'
-                    Width='150' Height='40' Margin='10'
-                    Background='#FF5733' Foreground='White'/>
-            <Button x:Name='VersionButton' Content='Version info'
-                    Width='150' Height='40' Margin='10'
-                    Background='#32CD32' Foreground='White'/>
-        </StackPanel>
-    </Grid>
-</Window>
-"@
+# --- INSTALL ---
+$installBtn = New-Object System.Windows.Forms.Button
+$installBtn.Text = "Install"
+$installBtn.Location = New-Object System.Drawing.Point(390,450)
+$installBtn.Size = New-Object System.Drawing.Size(100,35)
+$installBtn.BackColor = [System.Drawing.Color]::FromArgb(0,120,215)
+$installBtn.ForeColor = [System.Drawing.Color]::White
+$installBtn.FlatStyle = "Flat"
+$installBtn.Visible = $false
+$form.Controls.Add($installBtn)
 
-$reader = New-Object System.Xml.XmlNodeReader $xaml
-$window = [Windows.Markup.XamlReader]::Load($reader)
+# --- DATA ---
+$ids = @()
 
-# ---------- JSON ----------
-$url = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/applications.json"
-$jsonData = Invoke-RestMethod -Uri $url
+function DoSearch {
+    $listBox.Items.Clear()
+    $ids = @()
+    $installBtn.Visible = $false
 
-# ---------- Mapování UI → JSON ----------
-$CategoryMap = @{
-    "Browsers"       = "Browsers"
-    "Communications" = "Communications"
-    "Multimedia"     = "MultimediaTools"
-    "Utilities"      = "Utilities"
-    "Productivity"   = "Productivity"
-}
+    $query = $textBox.Text
+    if ($query -eq "") { return }
 
-# ---------- Funkce ----------
-function ShowApplications ($uiCategory) {
-    $jsonKey = $CategoryMap[$uiCategory]
-    $appList = $window.FindName("AppList")
-    $appList.Children.Clear()
+    try {
+        $lines = winget search $query | Select-Object -Skip 2
 
-    foreach ($app in $jsonData.$jsonKey) {
-        $cb = New-Object System.Windows.Controls.CheckBox
-        $cb.Content = $app.Name
-        $cb.Tag = $app.WingetID
-        $cb.Margin = "5"
-        $appList.Children.Add($cb)
-    }
-}
+        foreach ($line in $lines) {
+            if ($line.Trim() -eq "") { continue }
 
-function RunWinget ($args) {
-    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        [System.Windows.MessageBox]::Show("Winget není dostupný.","Chyba")
-        return
-    }
-    Start-Process winget -ArgumentList $args -NoNewWindow
-}
+            $parts = $line -split "\s{2,}"
 
-function InstallSelectedApps {
-    foreach ($c in $window.FindName("AppList").Children) {
-        if ($c.IsChecked) {
-            RunWinget "install --id $($c.Tag) --scope user -e"
+            if ($parts.Length -ge 3) {
+                $name = $parts[0]
+                $id = $parts[1]
+                $source = $parts[-1]
+
+                $ids += $id
+
+                # 🔥 NAME vlevo, SOURCE úplně vpravo
+                $row = "{0,-60}{1,10}" -f $name, $source
+                $listBox.Items.Add($row)
+            }
         }
-    }
-}
 
-function UninstallSelectedApps {
-    foreach ($c in $window.FindName("AppList").Children) {
-        if ($c.IsChecked) {
-            RunWinget "uninstall --id $($c.Tag) -e"
+        if ($listBox.Items.Count -gt 0) {
+            $installBtn.Visible = $true
         }
+
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show("Search failed")
     }
 }
 
-function ShowVersionInfo {
-    foreach ($c in $window.FindName("AppList").Children) {
-        if ($c.IsChecked) {
-            RunWinget "show --id $($c.Tag)"
-        }
-    }
-}
+# EVENTS
+$searchBtn.Add_Click({ DoSearch })
 
-# ---------- Events ----------
-$window.FindName("CategoryList").Add_SelectionChanged({
-    if ($_.AddedItems.Count -gt 0) {
-        ShowApplications $_.AddedItems[0].Content
+$textBox.Add_KeyDown({
+    if ($_.KeyCode -eq "Enter") {
+        DoSearch
     }
 })
 
-$window.FindName("InstallButton").Add_Click({ InstallSelectedApps })
-$window.FindName("UninstallButton").Add_Click({ UninstallSelectedApps })
-$window.FindName("VersionButton").Add_Click({ ShowVersionInfo })
+$installBtn.Add_Click({
+    $index = $listBox.SelectedIndex
+    if ($index -lt 0) { return }
 
-# Default
-ShowApplications "Browsers"
-$window.ShowDialog() | Out-Null
+    $id = $ids[$index]
+    Start-Process powershell -ArgumentList "winget install --id $id -e" -Verb RunAs
+})
+
+$form.ShowDialog()
