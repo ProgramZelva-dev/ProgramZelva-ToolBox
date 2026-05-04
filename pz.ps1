@@ -1,5 +1,5 @@
 # URL k PowerShell skriptu
-$scriptUrl = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/main/devtool.ps1"
+$scriptUrl = "https://raw.githubusercontent.com/ProgramZelva-dev/ProgramZelva-ToolBox/refs/heads/main/devtool.ps1"
 
 # Stažení PowerShell skriptu z URL
 $scriptContent = Invoke-WebRequest -Uri $scriptUrl -Method Get
